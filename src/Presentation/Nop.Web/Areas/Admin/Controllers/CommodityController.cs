@@ -73,6 +73,7 @@ namespace Nop.Web.Areas.Admin.Controllers
         private readonly VendorSettings _vendorSettings;
 
         private readonly ICommodityModelFactory _commodityModelFactory;
+        private readonly ICommodityService _commodityService;
         #endregion
 
         #region Ctor
@@ -109,7 +110,8 @@ namespace Nop.Web.Areas.Admin.Controllers
             IWorkContext workContext,
             VendorSettings vendorSettings,
 
-            ICommodityModelFactory commodityModelFactory)
+            ICommodityModelFactory commodityModelFactory,
+            ICommodityService commodityService)
         {
             _aclService = aclService;
             _backInStockSubscriptionService = backInStockSubscriptionService;
@@ -144,6 +146,7 @@ namespace Nop.Web.Areas.Admin.Controllers
             _vendorSettings = vendorSettings;
 
             _commodityModelFactory = commodityModelFactory;
+            _commodityService = commodityService;
         }
 
         #endregion
@@ -742,7 +745,23 @@ namespace Nop.Web.Areas.Admin.Controllers
 
             //prepare model
             var model = _commodityModelFactory.PrepareCommoditySearchModel(new CommoditySearchModel());
+            if(model == null)
+            {
+                throw new System.ArgumentException("the commodity model is null");
+            }
+            /*
+            else
+            {
+                throw new System.ArgumentException("the commodity model is not null " + model.SearchCommodityName);
+            }
+            
 
+            IList<Commodity> commoditylist = _commodityService.GetAllCommoditysDisplayedOnHomepage();
+            if (commoditylist.Any())
+            {
+                throw new System.ArgumentException("the commodity list model is null " + commoditylist.First().Name);
+            }
+            */
             return View(model);
         }
 

@@ -7,7 +7,7 @@ namespace Nop.Data.Mapping.Catalog
     /// <summary>
     /// Represents a product mapping configuration
     /// </summary>
-    public partial class CommodityMap : NopEntityTypeConfiguration<Product>
+    public partial class CommodityMap : NopEntityTypeConfiguration<Commodity>
     {
         #region Methods
 
@@ -15,7 +15,7 @@ namespace Nop.Data.Mapping.Catalog
         /// Configures the entity
         /// </summary>
         /// <param name="builder">The builder to be used to configure the entity</param>
-        public override void Configure(EntityTypeBuilder<Product> builder)
+        public override void Configure(EntityTypeBuilder<Commodity> builder)
         {
             builder.ToTable(nameof(Commodity));
             builder.HasKey(commodity => commodity.Id);
@@ -23,6 +23,8 @@ namespace Nop.Data.Mapping.Catalog
             builder.Property(commodity => commodity.Name).HasMaxLength(400).IsRequired();
             builder.Property(commodity => commodity.Price).HasColumnType("decimal(18, 4)");
             builder.Property(commodity => commodity.AllowedQuantities).HasMaxLength(1000);
+
+            builder.Ignore(commodity => commodity.SubjectToAcl);
             base.Configure(builder);
         }
 

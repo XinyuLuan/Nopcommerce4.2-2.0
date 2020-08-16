@@ -22,6 +22,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.TestPlatform" Version="16.7.0" />
     <PackageReference Include="WebMarkupMin.AspNetCore2" Version="2.5.0" />
     <PackageReference Include="WebMarkupMin.NUglify" Version="2.5.5" />
   </ItemGroup>

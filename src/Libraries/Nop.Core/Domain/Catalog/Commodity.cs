@@ -13,6 +13,6 @@ namespace Nop.Core.Domain.Catalog
         public string AllowedQuantities { get; set; }
         public decimal Price { get; set; }
         public bool Deleted { get; set; }
-        public bool SubjectToAcl { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public bool SubjectToAcl { get; set; }
     }
 }

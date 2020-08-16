@@ -201,7 +201,17 @@
 
                 <div class="panel panel-default">
                     <div class="panel-body">
-                        @await Html.PartialAsync("Table", new DataTablesModel
+                        Filters = new List<FilterParameter>
+                            {
+                                new FilterParameter(nameof(Model.SearchProductName)),
+                                new FilterParameter(nameof(Model.SearchCategoryId)),
+                                new FilterParameter(nameof(Model.SearchIncludeSubCategories), typeof(bool)),
+                                new FilterParameter(nameof(Model.SearchManufacturerId)),
+                                new FilterParameter(nameof(Model.SearchStoreId)),
+                                new FilterParameter(nameof(Model.SearchWarehouseId)),
+                                new FilterParameter(nameof(Model.SearchVendorId)),
+                                new FilterParameter(nameof(Model.SearchProductTypeId)),
+                               @await Html.PartialAsync("Table", new DataTablesModel
                         {
                             Name = "products-grid",
                             UrlRead = new DataUrl("ProductList", "Product", null),
@@ -214,11 +224,7 @@
                                 new FilterParameter(nameof(Model.SearchCategoryId)),
                                 new FilterParameter(nameof(Model.SearchIncludeSubCategories), typeof(bool)),
                                 new FilterParameter(nameof(Model.SearchManufacturerId)),
-                                new FilterParameter(nameof(Model.SearchStoreId)),
-                                new FilterParameter(nameof(Model.SearchWarehouseId)),
-                                new FilterParameter(nameof(Model.SearchVendorId)),
-                                new FilterParameter(nameof(Model.SearchProductTypeId)),
-                                new FilterParameter(nameof(Model.SearchPublishedId))
+                             new FilterParameter(nameof(Model.SearchPublishedId))
                             },
                             ColumnCollection = new List<ColumnProperty>
                             {

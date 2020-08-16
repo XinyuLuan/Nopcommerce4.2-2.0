@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Nop.Web.Framework.Models;
 using Nop.Web.Framework.Mvc.ModelBinding;
+using OfficeOpenXml.FormulaParsing.Excel.Functions.Text;
 
 namespace Nop.Web.Areas.Admin.Models.Catalog
 {
@@ -16,6 +17,10 @@ namespace Nop.Web.Areas.Admin.Models.Catalog
         {
         }
 
+        public CommoditySearchModel(string name)
+        {
+           SearchCommodityName = name;
+        }
         #endregion
 
         #region Properties
