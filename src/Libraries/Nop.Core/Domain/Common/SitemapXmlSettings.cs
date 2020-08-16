@@ -49,6 +49,11 @@ namespace Nop.Core.Domain.Common
         public bool SitemapXmlIncludeProducts { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether to include products to sitemap.xml
+        /// </summary>
+        public bool SitemapXmlIncludeCommodities { get; set; }
+
+        /// <summary>
         /// Gets or sets a value indicating whether to include product tags to sitemap.xml
         /// </summary>
         public bool SitemapXmlIncludeProductTags { get; set; }

@@ -52,6 +52,7 @@ namespace Nop.Services.Seo
         private readonly SecuritySettings _securitySettings;
         private readonly SitemapXmlSettings _sitemapXmlSettings;
 
+        private readonly ICommodityService _commodityService;
 
         #endregion
 
@@ -75,7 +76,9 @@ namespace Nop.Services.Seo
             LocalizationSettings localizationSettings,
             NewsSettings newsSettings,
             SecuritySettings securitySettings,
-            SitemapXmlSettings sitemapSettings)
+            SitemapXmlSettings sitemapSettings,
+
+            ICommodityService commodityService)
         {
             _blogSettings = blogSettings;
             _forumSettings = forumSettings;
@@ -96,6 +99,8 @@ namespace Nop.Services.Seo
             _newsSettings = newsSettings;
             _securitySettings = securitySettings;
             _sitemapXmlSettings = sitemapSettings;
+
+            _commodityService = commodityService;
         }
 
         #endregion
@@ -220,6 +225,10 @@ namespace Nop.Services.Seo
             if (_sitemapXmlSettings.SitemapXmlIncludeProducts)
                 sitemapUrls.AddRange(GetProductUrls());
 
+            //commodities
+            if (_sitemapXmlSettings.SitemapXmlIncludeCommodities)
+                sitemapUrls.AddRange(GetCommoditiesUrls());
+
             //product tags
             if (_sitemapXmlSettings.SitemapXmlIncludeProductTags)
                 sitemapUrls.AddRange(GetProductTagUrls());
@@ -284,6 +293,11 @@ namespace Nop.Services.Seo
                     .Select(product => GetLocalizedSitemapUrl("Product", GetSeoRouteParams(product), product.UpdatedOnUtc));
         }
 
+        protected virtual IEnumerable<SitemapUrl> GetCommoditiesUrls()
+        {
+            return _commodityService.SearchCommodities()
+                    .Select(commodity => GetLocalizedSitemapUrl("Commodity", GetSeoRouteParams(commodity)));
+        }
         /// <summary>
         /// Get product tag URLs for the sitemap
         /// </summary>

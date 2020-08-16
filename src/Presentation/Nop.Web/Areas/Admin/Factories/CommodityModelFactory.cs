@@ -193,10 +193,12 @@ namespace Nop.Web.Areas.Admin.Factories
             if (searchModel == null)
                 throw new ArgumentNullException(nameof(searchModel));
 
-            //get products
-            var commodities = _commodityService.SearchCommodity(
-                name : searchModel.SearchCommodityName
-                );
+            //get commodities
+
+            var commodities = _commodityService.SearchCommodities(
+                keywords: searchModel.SearchCommodityName,
+                pageIndex: searchModel.Page - 1, pageSize: searchModel.PageSize
+            );
 
             //prepare list model
             var model = new CommodityListModel().PrepareToGrid(searchModel, commodities, () =>

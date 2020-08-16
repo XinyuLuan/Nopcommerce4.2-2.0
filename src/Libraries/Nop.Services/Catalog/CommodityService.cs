@@ -80,19 +80,18 @@ namespace Nop.Services.Catalog
             _eventPublisher.EntityInserted(commodity);
         }
 
-        public IPagedList<Commodity> SearchCommodity(int pageIndex = 0,
-                                                     int pageSize = int.MaxValue,  
-                                                      decimal? priceMin = null, 
-                                                      decimal? priceMax = null, 
-                                                      string keywords = null,   
-                                                      IList<int> filteredSpecs = null,  
-                                                      bool showHidden = false)
+        public IPagedList<Commodity> SearchCommodities(int pageIndex = 0,
+                                                       int pageSize = int.MaxValue,  
+                                                       decimal? priceMin = null, 
+                                                       decimal? priceMax = null, 
+                                                       string keywords = null,   
+                                                       IList<int> filteredSpecs = null,  
+                                                       bool showHidden = false)
         {
             return SearchCommodities(out var _, false,
                 pageIndex, pageSize, 
                 priceMin, priceMax,keywords, filteredSpecs, showHidden);
 
-            //throw new NotImplementedException();
         }
 
         public virtual IPagedList<Commodity> SearchCommodities(
@@ -139,7 +138,7 @@ namespace Nop.Services.Catalog
             var pTotalRecords = _dataProvider.GetOutputInt32Parameter("TotalRecords");
 
             //invoke stored procedure questionable
-            var commodities = _dbContext.EntityFromSql<Commodity>("CommoditiesLoadAllPaged",
+            var commodities = _dbContext.EntityFromSql<Commodity>("CommodityLoadAllPaged",
                 pPriceMin,
                 pPriceMax,
                 pKeywords,
@@ -169,36 +168,6 @@ namespace Nop.Services.Catalog
             return new PagedList<Commodity>(commodities, pageIndex, pageSize, totalRecords);
         }
 
-
-        public IPagedList<Commodity> SearchCommodity(
-            string name = null, 
-            int pageIndex = 0, 
-            int pageSize = int.MaxValue, 
-            IList<int> categoryIds = null, 
-            int manufacturerId = 0, 
-            int storeId = 0, 
-            int vendorId = 0, 
-            int warehouseId = 0, 
-            ProductType? productType = null, 
-            bool visibleIndividuallyOnly = false, 
-            bool markedAsNewOnly = false, 
-            bool? featuredProducts = null, 
-            decimal? priceMin = null, 
-            decimal? priceMax = null, 
-            int productTagId = 0, 
-            string keywords = null, 
-            bool searchDescriptions = false, 
-            bool searchManufacturerPartNumber = true, 
-            bool searchSku = true, 
-            bool searchProductTags = false, 
-            int languageId = 0, 
-            IList<int> filteredSpecs = null, 
-            ProductSortingEnum orderBy = ProductSortingEnum.Position, 
-            bool showHidden = false, 
-            bool? overridePublished = null)
-        {
-            throw new NotImplementedException();
-        }
 
         public void UpdateCommodity(Commodity commodity)
         {

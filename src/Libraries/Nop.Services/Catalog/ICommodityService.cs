@@ -13,31 +13,22 @@ namespace Nop.Services.Catalog
         IList<Commodity> GetAllCommoditysDisplayedOnHomepage();
         void InsertCommodity(Commodity commodity);
         void UpdateCommodity(Commodity commodity);
-        IPagedList<Commodity> SearchCommodity(
-            string name = null,
+        IPagedList<Commodity> SearchCommodities(int pageIndex = 0,
+                                                     int pageSize = int.MaxValue,
+                                                      decimal? priceMin = null,
+                                                      decimal? priceMax = null,
+                                                      string keywords = null,
+                                                      IList<int> filteredSpecs = null,
+                                                      bool showHidden = false);
+        IPagedList<Commodity> SearchCommodities(
+            out IList<int> filterableSpecificationAttributeOptionIds,
+            bool loadFilterableSpecificationAttributeOptionIds = false,
             int pageIndex = 0,
             int pageSize = int.MaxValue,
-            IList<int> categoryIds = null,
-            int manufacturerId = 0,
-            int storeId = 0,
-            int vendorId = 0,
-            int warehouseId = 0,
-            ProductType? productType = null,
-            bool visibleIndividuallyOnly = false,
-            bool markedAsNewOnly = false,
-            bool? featuredProducts = null,
             decimal? priceMin = null,
             decimal? priceMax = null,
-            int productTagId = 0,
             string keywords = null,
-            bool searchDescriptions = false,
-            bool searchManufacturerPartNumber = true,
-            bool searchSku = true,
-            bool searchProductTags = false,
-            int languageId = 0,
             IList<int> filteredSpecs = null,
-            ProductSortingEnum orderBy = ProductSortingEnum.Position,
-            bool showHidden = false,
-            bool? overridePublished = null);
+            bool showHidden = false);
     }
 }

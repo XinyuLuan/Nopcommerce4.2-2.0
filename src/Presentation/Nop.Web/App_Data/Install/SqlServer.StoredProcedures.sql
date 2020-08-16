@@ -657,6 +657,306 @@ BEGIN
 END
 GO
 
+CREATE PROCEDURE [CommodityLoadAllPaged]
+(
+	@PriceMin			decimal(18, 4) = null,
+	@PriceMax			decimal(18, 4) = null,
+	@Keywords			nvarchar(4000) = null,
+	@FilteredSpecs		nvarchar(MAX) = null,	--filter by specification attribute options (comma-separated list of IDs). e.g. 14,15,16
+	@PageIndex			int = 0, 
+	@PageSize			int = 2147483644,
+	@ShowHidden			bit = 0,
+	@OverridePublished	bit = null, --null - process "Published" property according to "showHidden" parameter, true - load only "Published" products, false - load only "Unpublished" products
+	@LoadFilterableSpecificationAttributeOptionIds bit = 0, --a value indicating whether we should load the specification attribute option identifiers applied to loaded products (all pages)
+	@FilterableSpecificationAttributeOptionIds nvarchar(MAX) = null OUTPUT, --the specification attribute option identifiers applied to loaded products (all pages). returned as a comma separated list of identifiers
+	@TotalRecords		int = null OUTPUT
+)
+AS
+BEGIN
+	
+	/* Commodities that filtered by keywords */
+	CREATE TABLE #KeywordCommodities
+	(
+		[CommdityId] int NOT NULL
+	)
+
+	DECLARE
+		@SearchKeywords bit,
+		@OriginalKeywords nvarchar(4000),
+		@sql nvarchar(max),
+		@sql_orderby nvarchar(max)
+
+	SET NOCOUNT ON
+	
+	--filter by keywords
+	SET @Keywords = isnull(@Keywords, '')
+	SET @Keywords = rtrim(ltrim(@Keywords))
+	SET @OriginalKeywords = @Keywords
+	IF ISNULL(@Keywords, '') != ''
+	BEGIN
+		SET @SearchKeywords = 1
+		
+		IF @UseFullTextSearch = 1
+		BEGIN
+			--remove wrong chars (' ")
+			SET @Keywords = REPLACE(@Keywords, '''', '')
+			SET @Keywords = REPLACE(@Keywords, '"', '')
+			
+			--full-text search
+			IF @FullTextMode = 0 
+			BEGIN
+				--0 - using CONTAINS with <prefix_term>
+				SET @Keywords = ' "' + @Keywords + '*" '
+			END
+			ELSE
+			BEGIN
+				--5 - using CONTAINS and OR with <prefix_term>
+				--10 - using CONTAINS and AND with <prefix_term>
+
+				--clean multiple spaces
+				WHILE CHARINDEX('  ', @Keywords) > 0 
+					SET @Keywords = REPLACE(@Keywords, '  ', ' ')
+
+				DECLARE @concat_term nvarchar(100)				
+				IF @FullTextMode = 5 --5 - using CONTAINS and OR with <prefix_term>
+				BEGIN
+					SET @concat_term = 'OR'
+				END 
+				IF @FullTextMode = 10 --10 - using CONTAINS and AND with <prefix_term>
+				BEGIN
+					SET @concat_term = 'AND'
+				END
+
+				--now let's build search string
+				declare @fulltext_keywords nvarchar(4000)
+				set @fulltext_keywords = N''
+				declare @index int		
+		
+				set @index = CHARINDEX(' ', @Keywords, 0)
+
+				-- if index = 0, then only one field was passed
+				IF(@index = 0)
+					set @fulltext_keywords = ' "' + @Keywords + '*" '
+				ELSE
+				BEGIN		
+					DECLARE @first BIT
+					SET  @first = 1			
+					WHILE @index > 0
+					BEGIN
+						IF (@first = 0)
+							SET @fulltext_keywords = @fulltext_keywords + ' ' + @concat_term + ' '
+						ELSE
+							SET @first = 0
+
+						SET @fulltext_keywords = @fulltext_keywords + '"' + SUBSTRING(@Keywords, 1, @index - 1) + '*"'					
+						SET @Keywords = SUBSTRING(@Keywords, @index + 1, LEN(@Keywords) - @index)						
+						SET @index = CHARINDEX(' ', @Keywords, 0)
+					end
+					
+					-- add the last field
+					IF LEN(@fulltext_keywords) > 0
+						SET @fulltext_keywords = @fulltext_keywords + ' ' + @concat_term + ' ' + '"' + SUBSTRING(@Keywords, 1, LEN(@Keywords)) + '*"'	
+				END
+				SET @Keywords = @fulltext_keywords
+			END
+		END
+		ELSE
+		BEGIN
+			--usual search by PATINDEX
+			SET @Keywords = '%' + @Keywords + '%'
+		END
+		--PRINT @Keywords
+
+		--commodity name
+		SET @sql = '
+		INSERT INTO #KeywordCommodities ([CommodityId])
+		SELECT p.Id
+		FROM Commodity p with (NOLOCK)
+		WHERE '
+		SET @sql = @sql + 'PATINDEX(@Keywords, p.[Name]) > 0 '
+
+
+		--localized commodity name
+		SET @sql = @sql + '
+		UNION
+		SELECT lp.EntityId
+		FROM LocalizedProperty lp with (NOLOCK)
+		WHERE
+			lp.LocaleKeyGroup = N''Commodity''
+			AND lp.LocaleKey = N''Name'''
+		SET @sql = @sql + ' AND PATINDEX(@Keywords, lp.[LocaleValue]) > 0 '
+	
+
+		
+		
+		--PRINT (@sql)
+		EXEC sp_executesql @sql, N'@Keywords nvarchar(4000), @OriginalKeywords nvarchar(4000)', @Keywords, @OriginalKeywords
+
+	END
+	ELSE
+	BEGIN
+		SET @SearchKeywords = 0
+	END
+	
+	--paging
+	DECLARE @PageLowerBound int
+	DECLARE @PageUpperBound int
+	DECLARE @RowsToReturn int
+	SET @RowsToReturn = @PageSize * (@PageIndex + 1)	
+	SET @PageLowerBound = @PageSize * @PageIndex
+	SET @PageUpperBound = @PageLowerBound + @PageSize + 1
+	
+	CREATE TABLE #DisplayOrderTmp 
+	(
+		[Id] int IDENTITY (1, 1) NOT NULL,
+		[CommodityId] int NOT NULL
+	)
+
+	SET @sql = '
+	SELECT p.Id
+	FROM
+		Commodity p with (NOLOCK)'
+	
+	--searching by keywords
+	IF @SearchKeywords = 1
+	BEGIN
+		SET @sql = @sql + '
+		JOIN #KeywordCommodities kp
+			ON  p.Id = kp.CommodityId'
+	END
+	
+	SET @sql = @sql + '
+	WHERE
+		p.Deleted = 0'
+	
+	
+	--min price
+	IF @PriceMin is not null
+	BEGIN
+		SET @sql = @sql + '
+		AND (p.Price >= ' + CAST(@PriceMin AS nvarchar(max)) + ')'
+	END
+	
+	--max price
+	IF @PriceMax is not null
+	BEGIN
+		SET @sql = @sql + '
+		AND (p.Price <= ' + CAST(@PriceMax AS nvarchar(max)) + ')'
+	END
+		
+    --prepare filterable specification attribute option identifier (if requested)
+    IF @LoadFilterableSpecificationAttributeOptionIds = 1
+	BEGIN		
+		CREATE TABLE #FilterableSpecs 
+		(
+			[SpecificationAttributeOptionId] int NOT NULL
+		)
+        DECLARE @sql_filterableSpecs nvarchar(max)
+        SET @sql_filterableSpecs = '
+	        INSERT INTO #FilterableSpecs ([SpecificationAttributeOptionId])
+	        SELECT DISTINCT [psam].SpecificationAttributeOptionId
+	        FROM [Product_SpecificationAttribute_Mapping] [psam] WITH (NOLOCK)
+	            WHERE [psam].[AllowFiltering] = 1
+	            AND [psam].[ProductId] IN (' + @sql + ')'
+
+        EXEC sp_executesql @sql_filterableSpecs
+
+		--build comma separated list of filterable identifiers
+		SELECT @FilterableSpecificationAttributeOptionIds = COALESCE(@FilterableSpecificationAttributeOptionIds + ',' , '') + CAST(SpecificationAttributeOptionId as nvarchar(4000))
+		FROM #FilterableSpecs
+
+		DROP TABLE #FilterableSpecs
+ 	END
+
+	--filter by specification attribution options
+	SET @FilteredSpecs = isnull(@FilteredSpecs, '')	
+	CREATE TABLE #FilteredSpecs
+	(
+		SpecificationAttributeOptionId int not null
+	)
+	INSERT INTO #FilteredSpecs (SpecificationAttributeOptionId)
+	SELECT CAST(data as int) FROM [nop_splitstring_to_table](@FilteredSpecs, ',') 
+
+    CREATE TABLE #FilteredSpecsWithAttributes
+	(
+        SpecificationAttributeId int not null,
+		SpecificationAttributeOptionId int not null
+	)
+	INSERT INTO #FilteredSpecsWithAttributes (SpecificationAttributeId, SpecificationAttributeOptionId)
+	SELECT sao.SpecificationAttributeId, fs.SpecificationAttributeOptionId
+    FROM #FilteredSpecs fs INNER JOIN SpecificationAttributeOption sao ON sao.Id = fs.SpecificationAttributeOptionId
+    ORDER BY sao.SpecificationAttributeId 
+
+    DECLARE @SpecAttributesCount int	
+	SET @SpecAttributesCount = (SELECT COUNT(1) FROM #FilteredSpecsWithAttributes)
+	IF @SpecAttributesCount > 0
+	BEGIN
+		--do it for each specified specification option
+		DECLARE @SpecificationAttributeOptionId int
+        DECLARE @SpecificationAttributeId int
+        DECLARE @LastSpecificationAttributeId int
+        SET @LastSpecificationAttributeId = 0
+		DECLARE cur_SpecificationAttributeOption CURSOR FOR
+		SELECT SpecificationAttributeId, SpecificationAttributeOptionId
+		FROM #FilteredSpecsWithAttributes
+
+		OPEN cur_SpecificationAttributeOption
+        FOREACH:
+            FETCH NEXT FROM cur_SpecificationAttributeOption INTO @SpecificationAttributeId, @SpecificationAttributeOptionId
+            IF (@LastSpecificationAttributeId <> 0 AND @SpecificationAttributeId <> @LastSpecificationAttributeId OR @@FETCH_STATUS <> 0) 
+			    SET @sql = @sql + '
+        AND p.Id in (select psam.ProductId from [Product_SpecificationAttribute_Mapping] psam with (NOLOCK) where psam.AllowFiltering = 1 and psam.SpecificationAttributeOptionId IN (SELECT SpecificationAttributeOptionId FROM #FilteredSpecsWithAttributes WHERE SpecificationAttributeId = ' + CAST(@LastSpecificationAttributeId AS nvarchar(max)) + '))'
+            SET @LastSpecificationAttributeId = @SpecificationAttributeId
+		IF @@FETCH_STATUS = 0 GOTO FOREACH
+		CLOSE cur_SpecificationAttributeOption
+		DEALLOCATE cur_SpecificationAttributeOption
+	END
+
+	
+	
+    SET @sql = '
+    INSERT INTO #DisplayOrderTmp ([CommodityId])' + @sql
+
+	--PRINT (@sql)
+	EXEC sp_executesql @sql
+
+	DROP TABLE #FilteredSpecs
+    DROP TABLE #FilteredSpecsWithAttributes
+	DROP TABLE #KeywordCommodites
+
+	CREATE TABLE #PageIndex 
+	(
+		[IndexId] int IDENTITY (1, 1) NOT NULL,
+		[CommodityId] int NOT NULL
+	)
+	INSERT INTO #PageIndex ([ProductId])
+	SELECT ProductId
+	FROM #DisplayOrderTmp
+	GROUP BY CommodityId
+	ORDER BY min([Id])
+
+	--total records
+	SET @TotalRecords = @@rowcount
+	
+	DROP TABLE #DisplayOrderTmp
+
+	--return commodities
+	SELECT TOP (@RowsToReturn)
+		p.*
+	FROM
+		#PageIndex [pi]
+		INNER JOIN Product p with (NOLOCK) on p.Id = [pi].[CommodityId]
+	WHERE
+		[pi].IndexId > @PageLowerBound AND 
+		[pi].IndexId < @PageUpperBound
+	ORDER BY
+		[pi].IndexId
+	
+	DROP TABLE #PageIndex
+END
+GO
+
+
 CREATE PROCEDURE [ProductTagCountLoadAll]
 (
 	@StoreId int,
