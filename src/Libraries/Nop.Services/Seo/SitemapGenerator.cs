@@ -227,7 +227,7 @@ namespace Nop.Services.Seo
 
             //commodities
             if (_sitemapXmlSettings.SitemapXmlIncludeCommodities)
-                sitemapUrls.AddRange(GetCommoditiesUrls());
+                sitemapUrls.AddRange(GetCommodityUrls());
 
             //product tags
             if (_sitemapXmlSettings.SitemapXmlIncludeProductTags)
@@ -293,7 +293,7 @@ namespace Nop.Services.Seo
                     .Select(product => GetLocalizedSitemapUrl("Product", GetSeoRouteParams(product), product.UpdatedOnUtc));
         }
 
-        protected virtual IEnumerable<SitemapUrl> GetCommoditiesUrls()
+        protected virtual IEnumerable<SitemapUrl> GetCommodityUrls()
         {
             return _commodityService.SearchCommodities()
                     .Select(commodity => GetLocalizedSitemapUrl("Commodity", GetSeoRouteParams(commodity)));

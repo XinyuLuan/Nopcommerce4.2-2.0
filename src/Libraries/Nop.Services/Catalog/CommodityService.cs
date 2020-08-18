@@ -131,7 +131,7 @@ namespace Nop.Services.Catalog
             var pPageSize = _dataProvider.GetInt32Parameter("PageSize", pageSize);
             var pShowHidden = _dataProvider.GetBooleanParameter("ShowHidden", showHidden);
             var pLoadFilterableSpecificationAttributeOptionIds = _dataProvider.GetBooleanParameter("LoadFilterableSpecificationAttributeOptionIds", loadFilterableSpecificationAttributeOptionIds);
-            // 
+
             //prepare output parameters questionable
             var pFilterableSpecificationAttributeOptionIds = _dataProvider.GetOutputStringParameter("FilterableSpecificationAttributeOptionIds");
             pFilterableSpecificationAttributeOptionIds.Size = int.MaxValue - 1;

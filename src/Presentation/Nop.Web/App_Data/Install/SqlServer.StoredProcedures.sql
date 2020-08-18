@@ -145,7 +145,7 @@ BEGIN
 				SET @Keywords = @fulltext_keywords
 			END
 		END
-		ELSE
+		--ELSE
 		BEGIN
 			--usual search by PATINDEX
 			SET @Keywords = '%' + @Keywords + '%'
@@ -666,7 +666,6 @@ CREATE PROCEDURE [CommodityLoadAllPaged]
 	@PageIndex			int = 0, 
 	@PageSize			int = 2147483644,
 	@ShowHidden			bit = 0,
-	@OverridePublished	bit = null, --null - process "Published" property according to "showHidden" parameter, true - load only "Published" products, false - load only "Unpublished" products
 	@LoadFilterableSpecificationAttributeOptionIds bit = 0, --a value indicating whether we should load the specification attribute option identifiers applied to loaded products (all pages)
 	@FilterableSpecificationAttributeOptionIds nvarchar(MAX) = null OUTPUT, --the specification attribute option identifiers applied to loaded products (all pages). returned as a comma separated list of identifiers
 	@TotalRecords		int = null OUTPUT
@@ -695,7 +694,7 @@ BEGIN
 	IF ISNULL(@Keywords, '') != ''
 	BEGIN
 		SET @SearchKeywords = 1
-		
+        /*
 		IF @UseFullTextSearch = 1
 		BEGIN
 			--remove wrong chars (' ")
@@ -765,6 +764,7 @@ BEGIN
 			--usual search by PATINDEX
 			SET @Keywords = '%' + @Keywords + '%'
 		END
+        */
 		--PRINT @Keywords
 
 		--commodity name
@@ -922,15 +922,15 @@ BEGIN
 
 	DROP TABLE #FilteredSpecs
     DROP TABLE #FilteredSpecsWithAttributes
-	DROP TABLE #KeywordCommodites
+	DROP TABLE #KeywordCommodities
 
 	CREATE TABLE #PageIndex 
 	(
 		[IndexId] int IDENTITY (1, 1) NOT NULL,
 		[CommodityId] int NOT NULL
 	)
-	INSERT INTO #PageIndex ([ProductId])
-	SELECT ProductId
+	INSERT INTO #PageIndex ([CommodityId])
+	SELECT CommodityId
 	FROM #DisplayOrderTmp
 	GROUP BY CommodityId
 	ORDER BY min([Id])

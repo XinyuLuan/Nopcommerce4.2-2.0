@@ -402,6 +402,15 @@ namespace Nop.Web.Areas.Admin.Infrastructure.Mapper
                 .ForMember(model => model.Description, mo => mo.Ignore())
                 .ForMember(model => model.VisibleToAllCustomers, mo => mo.Ignore());
 
+
+            // Commodity
+            CreateMap<Commodity, CommodityModel>()
+                .ForMember(model => model.SeName, options => options.Ignore());
+            CreateMap<CommodityModel, Commodity>()
+                .ForMember(model => model.Deleted, options => options.Ignore())
+                .ForMember(model => model.SubjectToAcl, options => options.Ignore());
+            
+
             //products
             CreateMap<Product, ProductModel>()
                 .ForMember(model => model.AddPictureModel, options => options.Ignore())
@@ -684,10 +693,6 @@ namespace Nop.Web.Areas.Admin.Infrastructure.Mapper
             CreateMap<Setting, SettingModel>()
                 .ForMember(setting => setting.AvailableStores, options => options.Ignore())
                 .ForMember(setting => setting.Store, options => options.Ignore());
-
-            // Commodity
-            CreateMap<Commodity, CommoditySearchModel>();
-            CreateMap<CommoditySearchModel, Commodity>();
         }
 
         /// <summary>
